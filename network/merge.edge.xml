@@ -1,0 +1,7 @@
+<edges>
+    <!-- No length= override: length comes from geometry, so what you see in sumo-gui is what the controller sees.
+         Ramp joins at ~5.7 degrees, so the junction curve no longer caps speed (was 11.13 m/s). -->
+    <edge id="main_in"  from="start_main" to="merge_node" numLanes="1" speed="30.0"/>
+    <edge id="ramp_in"  from="start_ramp" to="merge_node" numLanes="1" speed="30.0"/>
+    <edge id="main_out" from="merge_node" to="end_main"   numLanes="1" speed="30.0"/>
+</edges>

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-09-20T20:00:50.086483+05:30 by Eclipse SUMO netconvert 1.27.1
+<netconvertConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/netconvertConfiguration.xsd">
+
+    <input>
+        <node-files value="merge.node.xml"/>
+        <edge-files value="merge.edge.xml"/>
+    </input>
+
+    <output>
+        <output-file value="merge.net.xml"/>
+    </output>
+
+</netconvertConfiguration>
+-->
+
+<net version="1.20" junctionCornerDetail="5" limitTurnSpeed="5.50" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/net_file.xsd">
+
+    <location netOffset="0.00,40.00" convBoundary="0.00,0.00,700.00,40.00" origBoundary="0.00,-40.00,700.00,0.00" projParameter="!"/>
+
+    <edge id=":merge_node_0" function="internal">
+        <lane id=":merge_node_0_0" index="0" speed="30.00" length="35.16" shape="366.67,35.06 373.53,35.79 384.15,36.92 394.78,37.95 401.66,38.40"/>
+    </edge>
+    <edge id=":merge_node_1" function="internal">
+        <lane id=":merge_node_1_0" index="0" speed="30.00" length="35.16" shape="366.50,38.40 401.66,38.40"/>
+    </edge>
+
+    <edge id="main_in" from="start_main" to="merge_node" priority="-1">
+        <lane id="main_in_0" index="0" speed="30.00" length="366.50" shape="0.00,38.40 366.50,38.40"/>
+    </edge>
+    <edge id="main_out" from="merge_node" to="end_main" priority="-1">
+        <lane id="main_out_0" index="0" speed="30.00" length="298.34" shape="401.66,38.40 700.00,38.40"/>
+    </edge>
+    <edge id="ramp_in" from="start_ramp" to="merge_node" priority="-1">
+        <lane id="ramp_in_0" index="0" speed="30.00" length="368.34" shape="0.16,-1.59 366.67,35.06"/>
+    </edge>
+
+    <junction id="end_main" type="dead_end" x="700.00" y="40.00" incLanes="main_out_0" intLanes="" shape="700.00,36.80 700.00,40.00"/>
+    <junction id="merge_node" type="priority" x="400.00" y="40.00" incLanes="ramp_in_0 main_in_0" intLanes=":merge_node_0_0 :merge_node_1_0" shape="401.66,40.00 401.66,36.80 394.21,36.67 388.72,36.32 384.21,35.79 379.71,35.10 374.24,34.32 366.83,33.47 366.51,36.65 366.50,36.80 366.50,40.00">
+        <request index="0" response="00" foes="10" cont="0"/>
+        <request index="1" response="01" foes="01" cont="0"/>
+    </junction>
+    <junction id="start_main" type="dead_end" x="0.00" y="40.00" incLanes="" intLanes="" shape="0.00,40.00 0.00,36.80"/>
+    <junction id="start_ramp" type="dead_end" x="0.00" y="0.00" incLanes="" intLanes="" shape="0.00,0.00 0.32,-3.18"/>
+
+    <connection from="main_in" to="main_out" fromLane="0" toLane="0" via=":merge_node_1_0" dir="s" state="m"/>
+    <connection from="ramp_in" to="main_out" fromLane="0" toLane="0" via=":merge_node_0_0" dir="s" state="M"/>
+
+    <connection from=":merge_node_0" to="main_out" fromLane="0" toLane="0" dir="s" state="M"/>
+    <connection from=":merge_node_1" to="main_out" fromLane="0" toLane="0" dir="s" state="M"/>
+
+</net>

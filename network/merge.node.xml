@@ -1,0 +1,7 @@
+<nodes>
+    <!-- Geometry now matches the real lengths: main_in = 400 m, ramp_in ~ 402 m, main_out = 300 m -->
+    <node id="start_main" x="0"   y="0"   type="priority"/>
+    <node id="start_ramp" x="0"   y="-40" type="priority"/>
+    <node id="merge_node" x="400" y="0"   type="priority"/>
+    <node id="end_main"   x="700" y="0"   type="priority"/>
+</nodes>

@@ -1,0 +1,15 @@
+<configuration>
+    <input>
+        <net-file value="../network/merge.net.xml"/>
+        <route-files value="../routes/merge.route.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+        <step-length value="0.1"/>
+    </time>
+    <processing>
+        <!-- warn (not remove) so a collision is reported instead of silently deleting the vehicle -->
+        <collision.action value="warn"/>
+    </processing>
+</configuration>
