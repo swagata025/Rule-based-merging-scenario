@@ -3,21 +3,49 @@ import csv
 import os
 import sys
 
+# Compute paths relative to project root
+HERE = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(HERE)
+DEFAULT_CONFIG = os.path.join(PROJECT_ROOT, "config", "merge.config.xml")
+
+# Load environment variables from .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+except ImportError:
+    pass
+
+# Ensure SUMO_HOME binaries and tools are in PATH and sys.path if specified
+sumo_home = os.environ.get("SUMO_HOME")
+if sumo_home and os.path.isdir(sumo_home):
+    tools = os.path.join(sumo_home, "tools")
+    bin_dir = os.path.join(sumo_home, "bin")
+    if tools not in sys.path:
+        sys.path.append(tools)
+    if bin_dir not in os.environ.get("PATH", ""):
+        os.environ["PATH"] = bin_dir + os.pathsep + os.environ.get("PATH", "")
+
 import traci
 
 from agent import VehicleAgent
 from infrastructure import InfrastructureCoordinator
 from controller import LongitudinalController
 
-HERE = os.path.dirname(os.path.abspath(__file__))
 DT = 0.1
 SORT_PERIOD = 2.0          # [s] infrastructure sorting period (0.5 Hz, paper: "low frequency" vs 10 Hz control)
 LEADER_LOOKAHEAD = 150.0   # [m] radar range used by the TTC fail-safe
 
 
-def run(gui=True, sim_time=None, log_path=None):
-    cfg = os.path.join(HERE, "config", "merge.config.xml")
-    traci.start(["sumo-gui" if gui else "sumo", "-c", r"C:\Users\Swagata\OneDrive\Desktop\documents\minor-sem5-project\config\merge.config.xml", "--step-length", str(DT),
+def run(gui=True, sim_time=None, log_path=None, config_path=None):
+    cfg = config_path or os.environ.get("SUMO_CONFIG_PATH") or DEFAULT_CONFIG
+    if not os.path.isabs(cfg):
+        cfg = os.path.normpath(os.path.join(PROJECT_ROOT, cfg))
+
+    if not os.path.isfile(cfg):
+        raise FileNotFoundError(f"SUMO config file not found: {cfg}")
+
+    sumo_binary = "sumo-gui" if gui else "sumo"
+    traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
                  "--no-warnings", "true"] + (["--start", "--quit-on-end"] if gui else []))
 
     ramp_len = traci.lane.getLength("ramp_in_0")
@@ -106,9 +134,18 @@ def run(gui=True, sim_time=None, log_path=None):
 
 
 if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
+    env_gui = os.environ.get("SUMO_GUI", "true").lower() in ("true", "1", "yes")
+    env_time = os.environ.get("SIM_TIME")
+    default_time = float(env_time) if env_time else None
+    default_log = os.environ.get("SIM_LOG_PATH", os.path.join(PROJECT_ROOT, "sim_log.csv"))
+
+    ap = argparse.ArgumentParser(description="Run CAV cooperative merge simulation.")
     ap.add_argument("--nogui", action="store_true", help="run headless (much faster)")
-    ap.add_argument("--time", type=float, default=None, help="stop after this many sim seconds")
-    ap.add_argument("--log", default=os.path.join(HERE, "sim_log.csv"), help="CSV output for analyze.py")
+    ap.add_argument("--gui", action="store_true", help="force run with GUI")
+    ap.add_argument("--time", type=float, default=default_time, help="stop after this many sim seconds")
+    ap.add_argument("--config", type=str, default=None, help="path to custom SUMO config file")
+    ap.add_argument("--log", default=default_log, help="CSV output log path")
     args = ap.parse_args()
-    run(gui=not args.nogui, sim_time=args.time, log_path=args.log)
+
+    use_gui = True if args.gui else (False if args.nogui else env_gui)
+    run(gui=use_gui, sim_time=args.time, log_path=args.log, config_path=args.config)
