@@ -46,3 +46,4 @@ class VehicleAgent:
             "speed": self.speed, "accel": self.accel, "pos": self.pos,
             "dist_to_merge": self.dist_to_merge, "length": self.length,
         }
+

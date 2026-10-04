@@ -5,3 +5,5 @@
     <edge id="ramp_in"  from="start_ramp" to="merge_node" numLanes="1" speed="30.0"/>
     <edge id="main_out" from="merge_node" to="end_main"   numLanes="1" speed="30.0"/>
 </edges>
+
+<!-- what changed that there are no length overrides, and was the capping of speed making some issue-->
