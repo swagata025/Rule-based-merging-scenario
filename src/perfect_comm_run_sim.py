@@ -27,9 +27,9 @@ if sumo_home and os.path.isdir(sumo_home):
 
 import traci
 
-from agent import VehicleAgent
-from infrastructure import InfrastructureCoordinator
-from controller import LongitudinalController
+from perfect_comm.agent import VehicleAgent
+from perfect_comm.infrastructure import InfrastructureCoordinator
+from perfect_comm.controller import LongitudinalController
 
 DT = 0.1
 SORT_PERIOD = 2.0          # [s] infrastructure sorting period (0.5 Hz, paper: "low frequency" vs 10 Hz control)
@@ -75,6 +75,7 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None):
             if st["lane"] in ("main", "ramp"):
                 coordinator.receive_vehicle_data(vid, st["lane"], st["speed"], st["dist_to_merge"],
                                                  t, first_contact=not ag.entered_v2i)
+                
                 ag.entered_v2i = True
 
         # ---- 2. clean up vehicles that left the network --------------------------------------
