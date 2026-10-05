@@ -1,4 +1,4 @@
-Scenario,Duration [s],Collisions,TTC Conflicts,V2V Packets,Total Packets,Sent Data [KB],Delivered [KB],Bitrate [kbps],Packet Loss [%]
+Scenario,Duration [s],Collisions,TTC Conflicts,V2V Packets Sent,Total Packets Sent,Sent Data [KB],Delivered Data [KB],Bitrate [kbps],Packet Loss [%]
 Perfect Comm (10 Hz Baseline),300.0,0.0,0.0,16129.0,18597.0,1147.188,1147.188,31.326,0%
 Event-Based V2V (Proposed),300.0,0.0,0.0,1677.0,4145.0,243.938,243.938,6.661,0%
 Real Comm (0% Loss),300.0,0.0,0.0,16048.0,18591.0,1146.812,1146.812,31.316,0%
