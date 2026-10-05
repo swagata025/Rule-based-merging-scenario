@@ -22,3 +22,7 @@ output.xml
 .idea/
 .DS_Store
 Thumbs.db
+
+# Documentation & presentation generation tools and artifacts
+docs_making/
+
