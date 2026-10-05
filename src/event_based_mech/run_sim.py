@@ -53,10 +53,25 @@ PKT_BYTES_V2I = 64
 PKT_BYTES_I2V = 48
 PKT_BYTES_V2V = 64
 
+<<<<<<< Updated upstream
 LOG_HEADER = [
     "t", "id", "origin", "lane", "dist_to_merge", "speed", "accel", "a_cmd",
     "seq", "pred", "failsafe", "v2i_tx", "i2v_tx", "v2v_tx"
 ]
+=======
+PROJECT_ROOT = os.path.dirname(os.path.dirname(HERE))
+DEFAULT_CONFIG = os.path.join(PROJECT_ROOT, "config", "merge.config.xml")
+
+
+def run(gui=True, sim_time=None, log_path=None, config_path=None, v_th=DEFAULT_V_TH, d_th=DEFAULT_D_TH,
+        max_silence=DEFAULT_MAX_SILENCE, dead_reckoning=True):
+    cfg = config_path or os.environ.get("SUMO_CONFIG_PATH") or DEFAULT_CONFIG
+    if not os.path.isabs(cfg):
+        cfg = os.path.normpath(os.path.join(PROJECT_ROOT, cfg))
+
+    if not os.path.isfile(cfg):
+        raise FileNotFoundError(f"SUMO config file not found: {cfg}")
+>>>>>>> Stashed changes
 
 
 def save_outputs_and_plots(out_dir, tag, log, metrics, time_series):
