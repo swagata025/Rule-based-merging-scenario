@@ -1,12 +1,11 @@
 <routes>
-    <vType id="cav" length="5.0" minGap="2.5" maxSpeed="35.0" accel="2.6" decel="4.5" emergencyDecel="9.0"
-           sigma="0.0" speedFactor="1.0" speedDev="0.0" color="0,1,0"/>
+  <vType id="cav" length="5.0" minGap="2.5" maxSpeed="35.0" accel="2.6" decel="4.5" emergencyDecel="9.0"
+sigma="0.0" speedFactor="1.0" speedDev="0.0" color="0,1,0"/>
 
-    <route id="route_main" edges="main_in main_out"/>
-    <route id="route_ramp" edges="ramp_in main_out"/>
-    <!-- 6s - 1 highway vehicle, 12s 1 ramp vehicle -->
-    <!-- depart speed is not random, we can sample it from a distribution later-->
-    <flow id="flow_main" type="cav" route="route_main" begin="0" end="3600" vehsPerHour="600" departSpeed="25.0"/>
-    <flow id="flow_ramp" type="cav" route="route_ramp" begin="0" end="3600" vehsPerHour="300" departSpeed="15.0"/>
+ <route id="route_main" edges="main_in main_out"/>
+<route id="route_ramp" edges="ramp_in main_out"/>
+ <!-- 6s - 1 highway vehicle, 12s 1 ramp vehicle -->
+ <!-- depart speed is not random, we can sample it from a distribution later-->
+ <flow id="flow_main" type="cav" route="route_main" begin="0" end="3600" vehsPerHour="900" departSpeed="25.0"/>
+<flow id="flow_ramp" type="cav" route="route_ramp" begin="0" end="3600" vehsPerHour="600" departSpeed="15.0"/>
 </routes>
-

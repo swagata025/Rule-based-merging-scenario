@@ -46,87 +46,87 @@ LOG_HEADER = [
 ]
 
 
-def save_outputs_and_plots(out_dir, log, metrics, time_series):
-    os.makedirs(out_dir, exist_ok=True)
-    log_path = os.path.join(out_dir, "sim_log.csv")
-    summary_path = os.path.join(out_dir, "metrics_summary.csv")
-    plot_path = os.path.join(out_dir, "metrics_dashboard.png")
+# def save_outputs_and_plots(out_dir, log, metrics, time_series):
+#     os.makedirs(out_dir, exist_ok=True)
+#     log_path = os.path.join(out_dir, "sim_log.csv")
+#     summary_path = os.path.join(out_dir, "metrics_summary.csv")
+#     plot_path = os.path.join(out_dir, "metrics_dashboard.png")
 
-    # 1. Save detailed step-by-step vehicle log
-    with open(log_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(LOG_HEADER)
-        w.writerows(log)
+#     # 1. Save detailed step-by-step vehicle log
+#     with open(log_path, "w", newline="") as f:
+#         w = csv.writer(f)
+#         w.writerow(LOG_HEADER)
+#         w.writerows(log)
 
-    # 2. Save clean summary metrics CSV
-    with open(summary_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(["Metric", "Value", "Unit"])
-        for k, (val, unit) in metrics.items():
-            w.writerow([k, val, unit])
+#     # 2. Save clean summary metrics CSV
+#     with open(summary_path, "w", newline="") as f:
+#         w = csv.writer(f)
+#         w.writerow(["Metric", "Value", "Unit"])
+#         for k, (val, unit) in metrics.items():
+#             w.writerow([k, val, unit])
 
-    # 3. Generate 3-Panel Publication-Ready Dashboard Plot
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5), dpi=150)
-    fig.suptitle("Cooperative Merging Performance — Perfect Communication (10 Hz Baseline)",
-                 fontsize=14, fontweight="bold", y=1.02)
+#     # 3. Generate 3-Panel Publication-Ready Dashboard Plot
+#     fig, axes = plt.subplots(1, 3, figsize=(16, 5), dpi=150)
+#     fig.suptitle("Cooperative Merging Performance — Perfect Communication (10 Hz Baseline)",
+#                  fontsize=14, fontweight="bold", y=1.02)
 
-    # Panel 1: Conflicts & Collisions
-    ax1 = axes[0]
-    c_labels = ["Physical\nCollisions", "TTC Conflict\nEvents (<2.0s)", "Conflict Steps\n(0.1s each)"]
-    c_vals = [
-        metrics["Collisions"][0],
-        metrics["TTC_Conflict_Events"][0],
-        metrics["TTC_Conflict_Steps"][0]
-    ]
-    bars1 = ax1.bar(c_labels, c_vals, color=["#d62728", "#ff7f0e", "#ffbb78"], edgecolor="black", width=0.55)
-    ax1.set_title("1. Safety: Conflicts & Collisions", fontweight="bold")
-    ax1.set_ylabel("Count")
-    ax1.grid(axis="y", linestyle="--", alpha=0.5)
-    for b in bars1:
-        h = b.get_height()
-        ax1.annotate(f"{int(h)}", xy=(b.get_x() + b.get_width() / 2, h),
-                     xytext=(0, 3), textcoords="offset points", ha="center", fontweight="bold")
-    ax1.set_ylim(0, max(max(c_vals) * 1.2, 5))
+#     # Panel 1: Conflicts & Collisions
+#     ax1 = axes[0]
+#     c_labels = ["Physical\nCollisions", "TTC Conflict\nEvents (<2.0s)", "Conflict Steps\n(0.1s each)"]
+#     c_vals = [
+#         metrics["Collisions"][0],
+#         metrics["TTC_Conflict_Events"][0],
+#         metrics["TTC_Conflict_Steps"][0]
+#     ]
+#     bars1 = ax1.bar(c_labels, c_vals, color=["#d62728", "#ff7f0e", "#ffbb78"], edgecolor="black", width=0.55)
+#     ax1.set_title("1. Safety: Conflicts & Collisions", fontweight="bold")
+#     ax1.set_ylabel("Count")
+#     ax1.grid(axis="y", linestyle="--", alpha=0.5)
+#     for b in bars1:
+#         h = b.get_height()
+#         ax1.annotate(f"{int(h)}", xy=(b.get_x() + b.get_width() / 2, h),
+#                      xytext=(0, 3), textcoords="offset points", ha="center", fontweight="bold")
+#     ax1.set_ylim(0, max(max(c_vals) * 1.2, 5))
 
-    # Panel 2: Number of Messages by Link Type
-    ax2 = axes[1]
-    m_labels = ["V2I Uplink", "I2V Downlink", "V2V CACC", "Total Sent"]
-    m_vals = [
-        metrics["Messages_V2I_Sent"][0],
-        metrics["Messages_I2V_Sent"][0],
-        metrics["Messages_V2V_Sent"][0],
-        metrics["Messages_Total_Sent"][0]
-    ]
-    bars2 = ax2.bar(m_labels, m_vals, color=["#1f77b4", "#2ca02c", "#9467bd", "#333333"], edgecolor="black", width=0.55)
-    ax2.set_title("2. Number of Wireless Messages", fontweight="bold")
-    ax2.set_ylabel("Packet Count")
-    ax2.grid(axis="y", linestyle="--", alpha=0.5)
-    for b in bars2:
-        h = b.get_height()
-        ax2.annotate(f"{int(h):,}", xy=(b.get_x() + b.get_width() / 2, h),
-                     xytext=(0, 3), textcoords="offset points", ha="center", fontsize=9, fontweight="bold")
-    ax2.set_ylim(0, max(max(m_vals) * 1.18, 10))
+#     # Panel 2: Number of Messages by Link Type
+#     ax2 = axes[1]
+#     m_labels = ["V2I Uplink", "I2V Downlink", "V2V CACC", "Total Sent"]
+#     m_vals = [
+#         metrics["Messages_V2I_Sent"][0],
+#         metrics["Messages_I2V_Sent"][0],
+#         metrics["Messages_V2V_Sent"][0],
+#         metrics["Messages_Total_Sent"][0]
+#     ]
+#     bars2 = ax2.bar(m_labels, m_vals, color=["#1f77b4", "#2ca02c", "#9467bd", "#333333"], edgecolor="black", width=0.55)
+#     ax2.set_title("2. Number of Wireless Messages", fontweight="bold")
+#     ax2.set_ylabel("Packet Count")
+#     ax2.grid(axis="y", linestyle="--", alpha=0.5)
+#     for b in bars2:
+#         h = b.get_height()
+#         ax2.annotate(f"{int(h):,}", xy=(b.get_x() + b.get_width() / 2, h),
+#                      xytext=(0, 3), textcoords="offset points", ha="center", fontsize=9, fontweight="bold")
+#     ax2.set_ylim(0, max(max(m_vals) * 1.18, 10))
 
-    # Panel 3: Cumulative Communication Cost Over Time (KB)
-    ax3 = axes[2]
-    t_arr = time_series["t"]
-    cost_kb_arr = time_series["cum_cost_kb"]
-    ax3.plot(t_arr, cost_kb_arr, color="#1f77b4", linewidth=2.2,
-             label=f"Total Cost: {metrics['Comm_Cost_Total_KB'][0]:.2f} KB\nAvg Rate: {metrics['Comm_Cost_Bitrate_kbps'][0]:.2f} kbps")
-    ax3.fill_between(t_arr, cost_kb_arr, color="#1f77b4", alpha=0.15)
-    ax3.set_title("3. Cumulative Communication Cost", fontweight="bold")
-    ax3.set_xlabel("Simulation Time [s]")
-    ax3.set_ylabel("Cumulative Data Transmitted [KB]")
-    ax3.grid(True, linestyle="--", alpha=0.5)
-    ax3.legend(loc="upper left", frameon=True)
+#     # Panel 3: Cumulative Communication Cost Over Time (KB)
+#     ax3 = axes[2]
+#     t_arr = time_series["t"]
+#     cost_kb_arr = time_series["cum_cost_kb"]
+#     ax3.plot(t_arr, cost_kb_arr, color="#1f77b4", linewidth=2.2,
+#              label=f"Total Cost: {metrics['Comm_Cost_Total_KB'][0]:.2f} KB\nAvg Rate: {metrics['Comm_Cost_Bitrate_kbps'][0]:.2f} kbps")
+#     ax3.fill_between(t_arr, cost_kb_arr, color="#1f77b4", alpha=0.15)
+#     ax3.set_title("3. Cumulative Communication Cost", fontweight="bold")
+#     ax3.set_xlabel("Simulation Time [s]")
+#     ax3.set_ylabel("Cumulative Data Transmitted [KB]")
+#     ax3.grid(True, linestyle="--", alpha=0.5)
+#     ax3.legend(loc="upper left", frameon=True)
 
-    plt.tight_layout()
-    plt.savefig(plot_path, bbox_inches="tight")
-    plt.close(fig)
+#     plt.tight_layout()
+#     plt.savefig(plot_path, bbox_inches="tight")
+#     plt.close(fig)
 
-    print(f"\n[SAVED] Vehicle Log     -> {log_path}")
-    print(f"[SAVED] Metrics Summary -> {summary_path}")
-    print(f"[SAVED] Metrics Plot    -> {plot_path}")
+#     print(f"\n[SAVED] Vehicle Log     -> {log_path}")
+#     print(f"[SAVED] Metrics Summary -> {summary_path}")
+#     print(f"[SAVED] Metrics Plot    -> {plot_path}")
 
 
 def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
@@ -175,7 +175,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
             for vid in traci.vehicle.getIDList():
                 if vid not in agents:
                     agents[vid] = VehicleAgent(vid)
-                    traci.vehicle.setSpeedMode(vid, 1)
+                    traci.vehicle.setSpeedMode(vid, 0)
                 ag = agents[vid]
                 st = ag.update_state()
                 states[vid] = st
@@ -224,19 +224,20 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
                         leader = {"speed": states[lid]["speed"], "gap": gap}
 
                 is_fs = controller.failsafe_active(ego, leader)
+                #this is the part that handles back to SUMO, for further analysis
                 if is_fs:
                     conflict_steps += 1
                     if vid not in prev_failsafe_set:
                         conflict_events += 1
                         prev_failsafe_set.add(vid)
-                    traci.vehicle.setSpeedMode(vid, 31)
-                    traci.vehicle.setSpeed(vid, -1)
+                    traci.vehicle.setSpeedMode(vid)
+                    traci.vehicle.setSpeed(vid)
                     controller.prev_a[vid] = ego["accel"]
                     a_cmd = float("nan")
                 else:
                     prev_failsafe_set.discard(vid)
                     a_cmd = controller.compute_acceleration(ego, pred, coordinator.v_m)
-                    traci.vehicle.setSpeedMode(vid, 1)
+                    traci.vehicle.setSpeedMode(vid, 0)
                     traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
 
                 log.append((
@@ -265,33 +266,33 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
         except Exception:
             pass
 
-        total_msgs = v2i_sent + i2v_sent + v2v_sent
-        total_bytes = (v2i_sent * PKT_BYTES_V2I) + (i2v_sent * PKT_BYTES_I2V) + (v2v_sent * PKT_BYTES_V2V)
-        total_kb = total_bytes / 1024.0
-        bitrate_kbps = (total_bytes * 8.0 / 1000.0) / max(t, DT)
+    #     total_msgs = v2i_sent + i2v_sent + v2v_sent
+    #     total_bytes = (v2i_sent * PKT_BYTES_V2I) + (i2v_sent * PKT_BYTES_I2V) + (v2v_sent * PKT_BYTES_V2V)
+    #     total_kb = total_bytes / 1024.0
+    #     bitrate_kbps = (total_bytes * 8.0 / 1000.0) / max(t, DT)
 
-        metrics = {
-            "Duration_s": (round(t, 1), "s"),
-            "Collisions": (collisions, "count"),
-            "TTC_Conflict_Events": (conflict_events, "count"),
-            "TTC_Conflict_Steps": (conflict_steps, "steps"),
-            "Messages_V2I_Sent": (v2i_sent, "packets"),
-            "Messages_I2V_Sent": (i2v_sent, "packets"),
-            "Messages_V2V_Sent": (v2v_sent, "packets"),
-            "Messages_Total_Sent": (total_msgs, "packets"),
-            "Comm_Cost_Total_Bytes": (total_bytes, "B"),
-            "Comm_Cost_Total_KB": (round(total_kb, 3), "KB"),
-            "Comm_Cost_Bitrate_kbps": (round(bitrate_kbps, 3), "kbps"),
-        }
+    #     metrics = {
+    #         "Duration_s": (round(t, 1), "s"),
+    #         "Collisions": (collisions, "count"),
+    #         "TTC_Conflict_Events": (conflict_events, "count"),
+    #         "TTC_Conflict_Steps": (conflict_steps, "steps"),
+    #         "Messages_V2I_Sent": (v2i_sent, "packets"),
+    #         "Messages_I2V_Sent": (i2v_sent, "packets"),
+    #         "Messages_V2V_Sent": (v2v_sent, "packets"),
+    #         "Messages_Total_Sent": (total_msgs, "packets"),
+    #         "Comm_Cost_Total_Bytes": (total_bytes, "B"),
+    #         "Comm_Cost_Total_KB": (round(total_kb, 3), "KB"),
+    #         "Comm_Cost_Bitrate_kbps": (round(bitrate_kbps, 3), "kbps"),
+    #     }
 
-        print(f"\nDone (Perfect Comm). t={t:.1f}s | Collisions={collisions} | TTC Conflicts={conflict_events}")
-        print(f"Messages: Total={total_msgs} (V2I={v2i_sent}, I2V={i2v_sent}, V2V={v2v_sent})")
-        print(f"Comm Cost: {total_kb:.2f} KB ({bitrate_kbps:.2f} kbps)")
+    #     print(f"\nDone (Perfect Comm). t={t:.1f}s | Collisions={collisions} | TTC Conflicts={conflict_events}")
+    #     print(f"Messages: Total={total_msgs} (V2I={v2i_sent}, I2V={i2v_sent}, V2V={v2v_sent})")
+    #     print(f"Comm Cost: {total_kb:.2f} KB ({bitrate_kbps:.2f} kbps)")
 
-        if out_dir:
-            save_outputs_and_plots(out_dir, log, metrics, time_series)
+    #     if out_dir:
+    #         # save_outputs_and_plots(out_dir, log, metrics, time_series)
 
-    return collisions
+    # return collisions
 
 
 if __name__ == "__main__":

@@ -39,12 +39,12 @@ LOG_HEADER = ["t", "id", "origin", "lane", "dist_to_merge", "speed", "accel", "a
               "seq", "pred", "failsafe", "pred_age", "v_m_known"]
 
 
-def save_log(log, log_path):
-    with open(log_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(LOG_HEADER)
-        w.writerows(log)
-    print(f"Log saved to {log_path} ({len(log)} rows)")
+# def save_log(log, log_path):
+#     with open(log_path, "w", newline="") as f:
+#         w = csv.writer(f)
+#         w.writerow(LOG_HEADER)
+#         w.writerows(log)
+#     print(f"Log saved to {log_path} ({len(log)} rows)")
 
 
 def run(gui=True, sim_time=None, log_path=None, config_path=None,
@@ -88,7 +88,7 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
             for vid in traci.vehicle.getIDList():
                 if vid not in agents:
                     agents[vid] = VehicleAgent(vid, DT)
-                    traci.vehicle.setSpeedMode(vid, 1)      # obey our speed command (only 'safe speed' kept)
+                    traci.vehicle.setSpeedMode(vid, 0)      # obey our speed command (only 'safe speed' kept)
                 ag = agents[vid]
                 st = ag.update_state()
                 states[vid] = st
@@ -182,8 +182,8 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
             rate = ch.dropped / ch.sent if ch.sent else 0.0
             print(f"  {name}: sent={ch.sent} dropped={ch.dropped} ({rate:.1%})")
 
-        if log_path:
-            save_log(log, log_path)
+        # if log_path:
+        #     save_log(log, log_path)
 
     return collisions
 
