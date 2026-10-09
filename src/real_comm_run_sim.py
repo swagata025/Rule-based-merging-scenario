@@ -58,7 +58,9 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
 
     sumo_binary = "sumo-gui" if gui else "sumo"
     traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
-                 "--no-warnings", "true"] + (["--start", "--quit-on-end"] if gui else []))
+                 "--collision.check-junctions", "true",
+                 "--collision.action", "warn"]
+                + (["--start", "--quit-on-end"] if gui else []))
 
     ramp_len = traci.lane.getLength("ramp_in_0")
     coordinator = InfrastructureCoordinator(ramp_len=ramp_len)
@@ -73,7 +75,7 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
     collisions = 0
     log = []
     sort_steps = int(round(SORT_PERIOD / DT))
-
+    seen_collisions = set()
     step = 0
     t = 0.0
     try:
@@ -81,14 +83,22 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
             traci.simulationStep()
             step += 1
             t = traci.simulation.getTime()
-            collisions += traci.simulation.getCollidingVehiclesNumber()
+
+            #Collision Check
+            for c in traci.simulation.getCollisions():
+                key = (c.collider, c.victim)
+                if key not in seen_collisions:
+                    seen_collisions.add(key)
+                    print(f"[COLLISION t={t:.1f}] collider={c.collider} "
+                          f"victim={c.victim} type={c.type} lane={c.lane} pos={c.pos:.1f}")
+            collisions = len(seen_collisions)
 
             # ---- 1. read own state (local sensors, perfect) and SEND messages ---------------
             states = {}
             for vid in traci.vehicle.getIDList():
                 if vid not in agents:
                     agents[vid] = VehicleAgent(vid, DT)
-                    traci.vehicle.setSpeedMode(vid, 0)      # obey our speed command (only 'safe speed' kept)
+                    traci.vehicle.setSpeedMode(vid, 0)      # all SUMO speed checks off: only our controller sets speed
                 ag = agents[vid]
                 st = ag.update_state()
                 states[vid] = st
@@ -136,7 +146,7 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
                 pred = ag.predecessor_estimate(t)         # last V2V snapshot, extrapolated; None if missing/stale
                 pred_age = (t - ag.pred_msg["ts"]) if ag.pred_msg else float("nan")
 
-                # Physical leader from onboard radar: stays perfect, it is the safety net
+                # Physical leader from onboard radar (perfect), used only by the TTC check
                 leader = None
                 info = traci.vehicle.getLeader(vid, LEADER_LOOKAHEAD)
                 if info:
@@ -146,15 +156,13 @@ def run(gui=True, sim_time=None, log_path=None, config_path=None,
 
                 ctrl = ag.controller                      # each vehicle owns its controller
                 if ctrl.failsafe_active(ego, leader):
-                    # paper: consensus control is deactivated, internal car-following takes over
-                    traci.vehicle.setSpeedMode(vid, 31)
-                    traci.vehicle.setSpeed(vid, -1)
-                    ctrl.prev_a = ego["accel"]
-                    a_cmd = float("nan")
+                    # TTC fail-safe: our own controller brakes at its comfort-deceleration limit.
+                    
+                    a_cmd = ctrl.a_comf_min
+                    ctrl.prev_a = a_cmd
                 else:
                     a_cmd = ctrl.compute_acceleration(ego, pred, ag.v_m)   # ag.v_m = last RECEIVED v_m
-                    traci.vehicle.setSpeedMode(vid, 1)
-                    traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
+                traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
 
                 log.append((round(t, 1), vid, ego["origin"], ego["lane"], round(ego["dist_to_merge"], 2),
                             round(ego["speed"], 3), round(ego["accel"], 3), a_cmd,
