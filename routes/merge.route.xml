@@ -1,11 +1,17 @@
 <routes>
-  <vType id="cav" length="5.0" minGap="2.5" maxSpeed="35.0" accel="2.6" decel="4.5" emergencyDecel="9.0"
-sigma="0.0" speedFactor="1.0" speedDev="0.0" color="0,1,0"/>
+    <!-- Highway CAV: Draws a speed multiplier from a normal curve. 
+         Mean = 1.0 (100% of edge speed limit), Std Dev = 0.1 (10%), Min = 0.85, Max = 1.15 -->
+    <vType id="cav_main" length="5.0" minGap="2.5" maxSpeed="35.0" accel="2.6" decel="4.5" emergencyDecel="9.0"
+           sigma="0.0" speedFactor="normc(1.0, 0.9, 0.85, 1.15)" color="0,1,0"/>
 
- <route id="route_main" edges="main_in main_out"/>
-<route id="route_ramp" edges="ramp_in main_out"/>
- <!-- 6s - 1 highway vehicle, 12s 1 ramp vehicle -->
- <!-- depart speed is not random, we can sample it from a distribution later-->
- <flow id="flow_main" type="cav" route="route_main" begin="0" end="3600" vehsPerHour="900" departSpeed="25.0"/>
-<flow id="flow_ramp" type="cav" route="route_ramp" begin="0" end="3600" vehsPerHour="600" departSpeed="15.0"/>
+    <!-- Ramp CAV: Separate vType allows you to tune ramp behavior independently if needed -->
+    <vType id="cav_ramp" length="5.0" minGap="2.5" maxSpeed="35.0" accel="2.6" decel="4.5" emergencyDecel="9.0"
+           sigma="0.0" speedFactor="normc(1.0, 0.6, 0.80, 1.20)" color="1,0.5,0"/>
+
+    <route id="route_main" edges="main_in main_out"/>
+    <route id="route_ramp" edges="ramp_in main_out"/>
+
+    <!-- departSpeed="desired" forces vehicles to spawn exactly at their randomized speedFactor limit -->
+    <flow id="flow_main" type="cav_main" route="route_main" begin="0" end="3600" vehsPerHour="900" departSpeed="desired"/>
+    <flow id="flow_ramp" type="cav_ramp" route="route_ramp" begin="0" end="3600" vehsPerHour="600" departSpeed="desired"/>
 </routes>

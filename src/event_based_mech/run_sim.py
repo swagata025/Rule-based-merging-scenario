@@ -283,7 +283,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                     if vid not in prev_failsafe_set:
                         conflict_events += 1
                         prev_failsafe_set.add(vid)
-                    traci.vehicle.setSpeedMode(vid)
+                    traci.vehicle.setSpeedMode(vid,0)
                     traci.vehicle.setSpeed(vid)
                     controller.prev_a[vid] = ego["accel"]
                     a_cmd = float("nan")
