@@ -8,7 +8,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))          # .../src/event_based
 SRC_DIR = os.path.dirname(HERE)                            # .../src
 PROJECT_ROOT = os.path.dirname(SRC_DIR)                    # .../minor-sem5-project
 DEFAULT_CONFIG = os.path.join(PROJECT_ROOT, "config", "merge.config.xml")
-OUTPUT_DIR = os.path.join(SRC_DIR, "output", "event_based_perfect_comm")
+OUTPUT_DIR = os.path.join(SRC_DIR, "output", "event_based_perfect_comm", "run-2", "seed-1")
 
 # Load environment variables from .env if present
 try:
@@ -59,113 +59,115 @@ LOG_HEADER = [
 ]
 
 
-# def save_outputs_and_plots(out_dir, tag, log, metrics, time_series):
-#     os.makedirs(out_dir, exist_ok=True)
-#     suffix = f"_{tag}" if tag else ""
-#     log_path = os.path.join(out_dir, f"sim_log{suffix}.csv")
-#     summary_path = os.path.join(out_dir, f"metrics_summary{suffix}.csv")
-#     plot_path = os.path.join(out_dir, f"metrics_dashboard{suffix}.png")
+def save_outputs_and_plots(out_dir, tag, log, metrics, time_series, save_logs=False):
+    os.makedirs(out_dir, exist_ok=True)
+    suffix = f"_{tag}" if tag else ""
+    log_path = os.path.join(out_dir, f"sim_log{suffix}.csv")
+    summary_path = os.path.join(out_dir, f"metrics_summary{suffix}.csv")
+    plot_path = os.path.join(out_dir, f"metrics_dashboard{suffix}.png")
 
-#     # 1. Save detailed step-by-step vehicle log
-#     with open(log_path, "w", newline="") as f:
-#         w = csv.writer(f)
-#         w.writerow(LOG_HEADER)
-#         w.writerows(log)
+    if save_logs:
+    # 1. Save detailed step-by-step vehicle log
+        with open(log_path, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(LOG_HEADER)
+            w.writerows(log)
 
-#     # 2. Save clean summary metrics CSV
-#     with open(summary_path, "w", newline="") as f:
-#         w = csv.writer(f)
-#         w.writerow(["Metric", "Value", "Unit"])
-#         for k, (val, unit) in metrics.items():
-#             w.writerow([k, val, unit])
+    # 2. Save clean summary metrics CSV
+    with open(summary_path, "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["Metric", "Value", "Unit"])
+        for k, (val, unit) in metrics.items():
+            w.writerow([k, val, unit])
 
-#     # 3. Generate 3-Panel Publication-Ready Dashboard Plot (Identical style to perfect_comm & real_comm)
-#     fig, axes = plt.subplots(1, 3, figsize=(16, 5), dpi=150)
-#     title_params = (f"v_th={metrics['Param_V_Th_mps'][0]} m/s, "
-#                     f"d_th={metrics['Param_D_Th_m'][0]} m, "
-#                     f"max_silence={metrics['Param_Max_Silence_s'][0]} s")
-#     fig.suptitle(f"Cooperative Merging Performance — Event-Based V2V Comm ({title_params})",
-#                  fontsize=14, fontweight="bold", y=1.02)
+    # 3. Generate 3-Panel Publication-Ready Dashboard Plot (Identical style to perfect_comm & real_comm)
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5), dpi=150)
+    title_params = (f"v_th={metrics['Param_V_Th_mps'][0]} m/s, "
+                    f"d_th={metrics['Param_D_Th_m'][0]} m, "
+                    f"max_silence={metrics['Param_Max_Silence_s'][0]} s")
+    fig.suptitle(f"Cooperative Merging Performance — Event-Based V2V Comm ({title_params})",
+                 fontsize=14, fontweight="bold", y=1.02)
 
-#     # Panel 1: Conflicts & Collisions
-#     ax1 = axes[0]
-#     c_labels = ["Physical\nCollisions", "TTC Conflict\nEvents (<2.0s)", "Conflict Steps\n(0.1s each)"]
-#     c_vals = [
-#         metrics["Collisions"][0],
-#         metrics["TTC_Conflict_Events"][0],
-#         metrics["TTC_Conflict_Steps"][0]
-#     ]
-#     bars1 = ax1.bar(c_labels, c_vals, color=["#d62728", "#ff7f0e", "#ffbb78"], edgecolor="black", width=0.55)
-#     ax1.set_title("1. Safety: Conflicts & Collisions", fontweight="bold")
-#     ax1.set_ylabel("Count")
-#     ax1.grid(axis="y", linestyle="--", alpha=0.5)
-#     for b in bars1:
-#         h = b.get_height()
-#         ax1.annotate(f"{int(h)}", xy=(b.get_x() + b.get_width() / 2, h),
-#                      xytext=(0, 3), textcoords="offset points", ha="center", fontweight="bold")
-#     ax1.set_ylim(0, max(max(c_vals) * 1.2, 5))
+    # Panel 1: Conflicts & Collisions
+    ax1 = axes[0]
+    c_labels = ["Physical\nCollisions", "TTC Conflict\nEvents (<2.0s)", "Conflict Steps\n(0.1s each)"]
+    c_vals = [
+        metrics["Collisions"][0],
+        metrics["TTC_Conflict_Events"][0],
+        metrics["TTC_Conflict_Steps"][0]
+    ]
+    bars1 = ax1.bar(c_labels, c_vals, color=["#d62728", "#ff7f0e", "#ffbb78"], edgecolor="black", width=0.55)
+    ax1.set_title("1. Safety: Conflicts & Collisions", fontweight="bold")
+    ax1.set_ylabel("Count")
+    ax1.grid(axis="y", linestyle="--", alpha=0.5)
+    for b in bars1:
+        h = b.get_height()
+        ax1.annotate(f"{int(h)}", xy=(b.get_x() + b.get_width() / 2, h),
+                     xytext=(0, 3), textcoords="offset points", ha="center", fontweight="bold")
+    ax1.set_ylim(0, max(max(c_vals) * 1.2, 5))
 
-#     # Panel 2: Number of Messages (Event-Sent vs. Saved by Event Trigger)
-#     ax2 = axes[1]
-#     links = ["V2I Uplink", "I2V Downlink", "V2V CACC", "Total"]
-#     sent_vals = [
-#         metrics["Messages_V2I_Sent"][0],
-#         metrics["Messages_I2V_Sent"][0],
-#         metrics["Messages_V2V_Sent"][0],
-#         metrics["Messages_Total_Sent"][0]
-#     ]
-#     base_v2v = metrics["Messages_V2V_Baseline_10Hz"][0]
-#     base_total = metrics["Messages_V2I_Sent"][0] + metrics["Messages_I2V_Sent"][0] + base_v2v
-#     base_vals = [
-#         metrics["Messages_V2I_Sent"][0],
-#         metrics["Messages_I2V_Sent"][0],
-#         base_v2v,
-#         base_total
-#     ]
-#     x = np.arange(len(links))
-#     width = 0.36
-#     b_base = ax2.bar(x - width / 2, base_vals, width, label="10 Hz Baseline", color="#aec7e8", edgecolor="black")
-#     b_sent = ax2.bar(x + width / 2, sent_vals, width, label="Event-Triggered Sent", color="#1f77b4", edgecolor="black")
-#     ax2.set_xticks(x)
-#     ax2.set_xticklabels(links)
-#     ax2.set_title("2. Number of Wireless Messages", fontweight="bold")
-#     ax2.set_ylabel("Packet Count")
-#     ax2.grid(axis="y", linestyle="--", alpha=0.5)
-#     ax2.legend(loc="upper left")
-#     for b in list(b_base) + list(b_sent):
-#         h = b.get_height()
-#         ax2.annotate(f"{int(h):,}", xy=(b.get_x() + b.get_width() / 2, h),
-#                      xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8, fontweight="bold")
-#     ax2.set_ylim(0, max(max(base_vals) * 1.2, 10))
+    # Panel 2: Number of Messages (Event-Sent vs. Saved by Event Trigger)
+    ax2 = axes[1]
+    links = ["V2I Uplink", "I2V Downlink", "V2V CACC", "Total"]
+    sent_vals = [
+        metrics["Messages_V2I_Sent"][0],
+        metrics["Messages_I2V_Sent"][0],
+        metrics["Messages_V2V_Sent"][0],
+        metrics["Messages_Total_Sent"][0]
+    ]
+    base_v2v = metrics["Messages_V2V_Baseline_10Hz"][0]
+    base_total = metrics["Messages_V2I_Sent"][0] + metrics["Messages_I2V_Sent"][0] + base_v2v
+    base_vals = [
+        metrics["Messages_V2I_Sent"][0],
+        metrics["Messages_I2V_Sent"][0],
+        base_v2v,
+        base_total
+    ]
+    x = np.arange(len(links))
+    width = 0.36
+    b_base = ax2.bar(x - width / 2, base_vals, width, label="10 Hz Baseline", color="#aec7e8", edgecolor="black")
+    b_sent = ax2.bar(x + width / 2, sent_vals, width, label="Event-Triggered Sent", color="#1f77b4", edgecolor="black")
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(links)
+    ax2.set_title("2. Number of Wireless Messages", fontweight="bold")
+    ax2.set_ylabel("Packet Count")
+    ax2.grid(axis="y", linestyle="--", alpha=0.5)
+    ax2.legend(loc="upper left")
+    for b in list(b_base) + list(b_sent):
+        h = b.get_height()
+        ax2.annotate(f"{int(h):,}", xy=(b.get_x() + b.get_width() / 2, h),
+                     xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8, fontweight="bold")
+    ax2.set_ylim(0, max(max(base_vals) * 1.2, 10))
 
-#     # Panel 3: Cumulative Communication Cost Over Time (KB)
-#     ax3 = axes[2]
-#     t_arr = time_series["t"]
-#     cost_event_kb = time_series["cum_cost_kb"]
-#     cost_base_kb = time_series["cum_baseline_cost_kb"]
-#     ax3.plot(t_arr, cost_base_kb, color="#7f7f7f", linestyle="--", linewidth=2.0,
-#              label=f"10 Hz Baseline Cost: {metrics['Comm_Cost_Baseline_10Hz_KB'][0]:.2f} KB")
-#     ax3.plot(t_arr, cost_event_kb, color="#2ca02c", linewidth=2.2,
-#              label=f"Event-Triggered Cost: {metrics['Comm_Cost_Total_KB'][0]:.2f} KB ({metrics['Comm_Cost_Bitrate_kbps'][0]:.2f} kbps)")
-#     ax3.fill_between(t_arr, cost_event_kb, cost_base_kb, color="#2ca02c", alpha=0.15,
-#                      label=f"Saved Bandwidth ({metrics['V2V_Reduction_Pct'][0]:.1f}% V2V reduction)")
-#     ax3.set_title("3. Cumulative Communication Cost", fontweight="bold")
-#     ax3.set_xlabel("Simulation Time [s]")
-#     ax3.set_ylabel("Cumulative Data Transmitted [KB]")
-#     ax3.grid(True, linestyle="--", alpha=0.5)
-#     ax3.legend(loc="upper left", fontsize=8.5, frameon=True)
+    # Panel 3: Cumulative Communication Cost Over Time (KB)
+    ax3 = axes[2]
+    t_arr = time_series["t"]
+    cost_event_kb = time_series["cum_cost_kb"]
+    cost_base_kb = time_series["cum_baseline_cost_kb"]
+    ax3.plot(t_arr, cost_base_kb, color="#7f7f7f", linestyle="--", linewidth=2.0,
+             label=f"10 Hz Baseline Cost: {metrics['Comm_Cost_Baseline_10Hz_KB'][0]:.2f} KB")
+    ax3.plot(t_arr, cost_event_kb, color="#2ca02c", linewidth=2.2,
+             label=f"Event-Triggered Cost: {metrics['Comm_Cost_Total_KB'][0]:.2f} KB ({metrics['Comm_Cost_Bitrate_kbps'][0]:.2f} kbps)")
+    ax3.fill_between(t_arr, cost_event_kb, cost_base_kb, color="#2ca02c", alpha=0.15,
+                     label=f"Saved Bandwidth ({metrics['V2V_Reduction_Pct'][0]:.1f}% V2V reduction)")
+    ax3.set_title("3. Cumulative Communication Cost", fontweight="bold")
+    ax3.set_xlabel("Simulation Time [s]")
+    ax3.set_ylabel("Cumulative Data Transmitted [KB]")
+    ax3.grid(True, linestyle="--", alpha=0.5)
+    ax3.legend(loc="upper left", fontsize=8.5, frameon=True)
 
-#     plt.tight_layout()
-#     plt.savefig(plot_path, bbox_inches="tight")
-#     plt.close(fig)
-
-#     print(f"\n[SAVED] Vehicle Log     -> {log_path}")
-#     print(f"[SAVED] Metrics Summary -> {summary_path}")
-#     print(f"[SAVED] Metrics Plot    -> {plot_path}")
+    plt.tight_layout()
+    plt.savefig(plot_path, bbox_inches="tight")
+    plt.close(fig)
+    if save_logs:
+        print(f"\n[SAVED] Vehicle Log     -> {log_path}")
+    print(f"[SAVED] Metrics Summary -> {summary_path}")
+    print(f"[SAVED] Metrics Plot    -> {plot_path}")
 
 
 def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
-        v_th=DEFAULT_V_TH, d_th=DEFAULT_D_TH, max_silence=DEFAULT_MAX_SILENCE, dead_reckoning=True):
+        v_th=DEFAULT_V_TH, d_th=DEFAULT_D_TH, max_silence=DEFAULT_MAX_SILENCE, dead_reckoning=True, 
+        seed=None, save_logs=False):
     cfg = config_path or os.environ.get("SUMO_CONFIG_PATH") or DEFAULT_CONFIG
     if not os.path.isabs(cfg):
         cfg = os.path.normpath(os.path.join(PROJECT_ROOT, cfg))
@@ -177,7 +179,9 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
 
     sumo_binary = "sumo-gui" if gui else "sumo"
     traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
-                 "--no-warnings", "true"] + (["--start", "--quit-on-end"] if gui else []))
+                 "--no-warnings", "true"] + 
+                (["--seed", str(seed)] if seed is not None else [])
+                 +(["--start", "--quit-on-end"] if gui else []))
 
     ramp_len = traci.lane.getLength("ramp_in_0")
     coordinator = InfrastructureCoordinator(ramp_len=ramp_len)
@@ -284,7 +288,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                         conflict_events += 1
                         prev_failsafe_set.add(vid)
                     traci.vehicle.setSpeedMode(vid,0)
-                    traci.vehicle.setSpeed(vid)
+                    traci.vehicle.setSpeed(vid, 0)
                     controller.prev_a[vid] = ego["accel"]
                     a_cmd = float("nan")
                 else:
@@ -292,15 +296,15 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                     a_cmd = controller.compute_acceleration(ego, pred, coordinator.v_m)
                     traci.vehicle.setSpeedMode(vid, 0)
                     traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
+                if save_logs:
+                    log.append((
+                        round(t, 1), vid, ego["origin"], ego["lane"], round(ego["dist_to_merge"], 2),
+                        round(ego["speed"], 3), round(ego["accel"], 3), a_cmd,
+                        coordinator.get_sequence_id(vid), pred_id, int(is_fs),
+                        v2i_tx_step.get(vid, 0), i2v_tx_step.get(vid, 0), v2v_tx_flags.get(vid, 0)
+                    ))
 
-                log.append((
-                    round(t, 1), vid, ego["origin"], ego["lane"], round(ego["dist_to_merge"], 2),
-                    round(ego["speed"], 3), round(ego["accel"], 3), a_cmd,
-                    coordinator.get_sequence_id(vid), pred_id, int(is_fs),
-                    v2i_tx_step.get(vid, 0), i2v_tx_step.get(vid, 0), v2v_tx_flags.get(vid, 0)
-                ))
-
-                if step % 20 == 0:
+                if step % 600 == 0:
                     d_pred = f"{pred['dist_to_merge']:.1f}" if pred else "-"
                     print(f"[{t:6.1f}s] {vid:<14}({ego['lane']:<8}) v={ego['speed']:5.1f} "
                           f"d2m={ego['dist_to_merge']:7.1f} pred={pred_id} (d={d_pred}) a={a_cmd:5.2f} "
@@ -354,8 +358,8 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
         print(f"V2V Channel Load Reduction: {v2v_saved_pct:.1f}%")
         print(f"Comm Cost: {total_kb:.2f} KB vs {base_kb:.2f} KB baseline ({bitrate_kbps:.2f} kbps)")
 
-        # if out_dir:
-        #     save_outputs_and_plots(out_dir, tag, log, metrics, time_series)
+        if out_dir:
+            save_outputs_and_plots(out_dir, tag, log, metrics, time_series,save_logs)
 
     return collisions
 
@@ -366,6 +370,8 @@ if __name__ == "__main__":
     default_time = float(env_time) if env_time else None
 
     ap = argparse.ArgumentParser(description="Run Event-Based V2V CAV cooperative merge simulation.")
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--no-log", action="store_true", help="skip sim_log.csv")
     ap.add_argument("--nogui", action="store_true", help="run headless (much faster)")
     ap.add_argument("--gui", action="store_true", help="force run with GUI")
     ap.add_argument("--time", type=float, default=default_time, help="stop after this many sim seconds")
@@ -381,4 +387,4 @@ if __name__ == "__main__":
     use_gui = True if args.gui else (False if args.nogui else env_gui)
     run(gui=use_gui, sim_time=args.time, out_dir=args.out_dir, tag=args.tag, config_path=args.config,
         v_th=args.v_th, d_th=args.d_th, max_silence=args.max_silence,
-        dead_reckoning=not args.no_dead_reckoning)
+        dead_reckoning=not args.no_dead_reckoning, seed=args.seed, save_logs=not args.no_log)
