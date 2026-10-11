@@ -214,7 +214,19 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
             traci.simulationStep()
             step += 1
             t = traci.simulation.getTime()
-            collisions += traci.simulation.getCollidingVehiclesNumber()
+            col_ids = set(traci.simulation.getCollidingVehiclesIDList())
+            collisions += len(col_ids)
+            for cid in col_ids:
+                print(f"[COLLISION] t={t:.1f}s vehicle={cid}")
+
+            alive = set(traci.vehicle.getIDList())
+            for vid in list(agents):
+                if vid not in alive:
+                    agents.pop(vid, None)
+                    coordinator.remove_vehicle(vid)
+                    controller.forget(vid)
+                    prev_failsafe_set.discard(vid)
+
 
             # ---- 1. Every vehicle reads its onboard state (10 Hz) & evaluates V2V Event Trigger ----
             states = {}
@@ -286,7 +298,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                         leader = {"speed": states[lid]["speed"], "gap": gap}
 
                 is_fs = controller.failsafe_active(ego, leader)
-                B_FAILSAFE = 6.0 
+                B_FAILSAFE = -6.0 
                 if is_fs:
                     conflict_steps += 1
                     if vid not in prev_failsafe_set:
@@ -364,8 +376,8 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
         print(f"V2V Channel Load Reduction: {v2v_saved_pct:.1f}%")
         print(f"Comm Cost: {total_kb:.2f} KB vs {base_kb:.2f} KB baseline ({bitrate_kbps:.2f} kbps)")
 
-        # if out_dir:
-        #     save_outputs_and_plots(out_dir, tag, log, metrics, time_series,save_logs)
+        if out_dir:
+            save_outputs_and_plots(out_dir, tag, log, metrics, time_series,save_logs)
 
     return collisions
 
