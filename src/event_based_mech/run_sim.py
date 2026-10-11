@@ -8,7 +8,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))          # .../src/event_based
 SRC_DIR = os.path.dirname(HERE)                            # .../src
 PROJECT_ROOT = os.path.dirname(SRC_DIR)                    # .../minor-sem5-project
 DEFAULT_CONFIG = os.path.join(PROJECT_ROOT, "config", "merge.config.xml")
-OUTPUT_DIR = os.path.join(SRC_DIR, "output", "event_based_perfect_comm", "run-2", "seed-1")
+OUTPUT_DIR = os.path.join(SRC_DIR, "output", "event_based_perfect_comm", "run-2")
 
 # Load environment variables from .env if present
 try:
@@ -176,12 +176,16 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
         cfg = fallback_cfg if os.path.isfile(fallback_cfg) else cfg
     if not os.path.isfile(cfg):
         raise FileNotFoundError(f"SUMO config file not found: {cfg}")
-
+    
+    os.makedirs(out_dir, exist_ok=True)
+    collision_xml = os.path.join(out_dir, "collisions.xml")
     sumo_binary = "sumo-gui" if gui else "sumo"
     traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
-                 "--no-warnings", "true"] + 
-                (["--seed", str(seed)] if seed is not None else [])
-                 +(["--start", "--quit-on-end"] if gui else []))
+                 "--collision.check-junctions", "true",
+                 "--collision.action", "remove",
+                 "--collision-output", collision_xml]
+                + (["--seed", str(seed)] if seed is not None else [])
+                + (["--start", "--quit-on-end"] if gui else []))
 
     ramp_len = traci.lane.getLength("ramp_in_0")
     coordinator = InfrastructureCoordinator(ramp_len=ramp_len)
@@ -282,15 +286,17 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                         leader = {"speed": states[lid]["speed"], "gap": gap}
 
                 is_fs = controller.failsafe_active(ego, leader)
+                B_FAILSAFE = 6.0 
                 if is_fs:
                     conflict_steps += 1
                     if vid not in prev_failsafe_set:
                         conflict_events += 1
                         prev_failsafe_set.add(vid)
                     traci.vehicle.setSpeedMode(vid,0)
-                    traci.vehicle.setSpeed(vid, 0)
-                    controller.prev_a[vid] = ego["accel"]
-                    a_cmd = float("nan")
+                    a_cmd = B_FAILSAFE
+                    traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
+                    controller.prev_a[vid] = a_cmd
+                    
                 else:
                     prev_failsafe_set.discard(vid)
                     a_cmd = controller.compute_acceleration(ego, pred, coordinator.v_m)
@@ -358,8 +364,8 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
         print(f"V2V Channel Load Reduction: {v2v_saved_pct:.1f}%")
         print(f"Comm Cost: {total_kb:.2f} KB vs {base_kb:.2f} KB baseline ({bitrate_kbps:.2f} kbps)")
 
-        if out_dir:
-            save_outputs_and_plots(out_dir, tag, log, metrics, time_series,save_logs)
+        # if out_dir:
+        #     save_outputs_and_plots(out_dir, tag, log, metrics, time_series,save_logs)
 
     return collisions
 

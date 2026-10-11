@@ -46,7 +46,7 @@ LOG_HEADER = [
 ]
 
 
-def save_outputs_and_plots(out_dir, log, metrics, time_series, save_log=True):
+def save_outputs_and_plots(out_dir, log, metrics, time_series, save_log=False):
     os.makedirs(out_dir, exist_ok=True)
     log_path = os.path.join(out_dir, "sim_log.csv")
     summary_path = os.path.join(out_dir, "metrics_summary.csv")
@@ -131,7 +131,7 @@ def save_outputs_and_plots(out_dir, log, metrics, time_series, save_log=True):
     print(f"[SAVED] Metrics Plot    -> {plot_path}")
 
 
-def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None, save_log=True):
+def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None, save_log=False):
     cfg = config_path or os.environ.get("SUMO_CONFIG_PATH") or DEFAULT_CONFIG
     if not os.path.isabs(cfg):
         cfg = os.path.normpath(os.path.join(PROJECT_ROOT, cfg))
@@ -140,10 +140,16 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None
         raise FileNotFoundError(f"SUMO config file not found: {cfg}")
 
     sumo_binary = "sumo-gui" if gui else "sumo"
-    traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT), "--no-warnings", "true"]
-                + (["--seed", str(seed)] if seed is not None else [])
-                + (["--start", "--quit-on-end"] if gui else []))
+    os.makedirs(out_dir, exist_ok=True)
+    collision_xml = os.path.join(out_dir, "collisions.xml")
 
+    traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
+             "--collision.check-junctions", "true",
+             "--collision.action", "remove",
+             "--collision-output", collision_xml]
+            + (["--seed", str(seed)] if seed is not None else [])
+            + (["--start", "--quit-on-end"] if gui else []))
+    
     ramp_len = traci.lane.getLength("ramp_in_0")
     coordinator = InfrastructureCoordinator(ramp_len=ramp_len)
     controller = LongitudinalController(dt=DT)
@@ -170,7 +176,18 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None
             traci.simulationStep()
             step += 1
             t = traci.simulation.getTime()
-            collisions += traci.simulation.getCollidingVehiclesNumber()
+            col_ids = set(traci.simulation.getCollidingVehiclesIDList())
+            collisions += len(col_ids)
+            for cid in col_ids:
+                print(f"[COLLISION] t={t:.1f}s vehicle={cid}")
+
+            alive = set(traci.vehicle.getIDList())
+            for vid in list(agents):
+                if vid not in alive:
+                    agents.pop(vid, None)
+                    coordinator.remove_vehicle(vid)
+                    controller.forget(vid)
+                    prev_failsafe_set.discard(vid)
 
             # ---- 1. Read vehicle state & report V2I Uplink (until sequenced) ----
             states = {}
@@ -228,15 +245,18 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None
 
                 is_fs = controller.failsafe_active(ego, leader)
                 #this is the part that handles back to SUMO, for further analysis
+                B_FAILSAFE = 6.0   # [m/s^2]; define once near DT at the top of the file
+
                 if is_fs:
                     conflict_steps += 1
                     if vid not in prev_failsafe_set:
                         conflict_events += 1
                         prev_failsafe_set.add(vid)
+                    a_cmd = -B_FAILSAFE
                     traci.vehicle.setSpeedMode(vid,0)
-                    traci.vehicle.setSpeed(vid,0)
-                    controller.prev_a[vid] = ego["accel"]
-                    a_cmd = float("nan")
+                    traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
+                    controller.prev_a[vid] = a_cmd
+                    
                 else:
                     prev_failsafe_set.discard(vid)
                     a_cmd = controller.compute_acceleration(ego, pred, coordinator.v_m)
