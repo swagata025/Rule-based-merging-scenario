@@ -7,7 +7,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(HERE)
 DEFAULT_CONFIG = os.path.join(PROJECT_ROOT, "config", "merge.config.xml")
-OUTPUT_DIR = os.path.join(HERE, "output", "perfect_comm")
+OUTPUT_DIR = os.path.join(HERE, "output", "perfect_comm", "run-2")
 
 try:
     from dotenv import load_dotenv
@@ -46,17 +46,18 @@ LOG_HEADER = [
 ]
 
 
-def save_outputs_and_plots(out_dir, log, metrics, time_series):
+def save_outputs_and_plots(out_dir, log, metrics, time_series, save_log=False):
     os.makedirs(out_dir, exist_ok=True)
     log_path = os.path.join(out_dir, "sim_log.csv")
     summary_path = os.path.join(out_dir, "metrics_summary.csv")
     plot_path = os.path.join(out_dir, "metrics_dashboard.png")
 
     # 1. Save detailed step-by-step vehicle log
-    with open(log_path, "w", newline="") as f:
-        w = csv.writer(f)
-        w.writerow(LOG_HEADER)
-        w.writerows(log)
+    if save_log:
+        with open(log_path, "w", newline="") as f:
+            w = csv.writer(f)
+            w.writerow(LOG_HEADER)
+            w.writerows(log)
 
     # 2. Save clean summary metrics CSV
     with open(summary_path, "w", newline="") as f:
@@ -124,12 +125,13 @@ def save_outputs_and_plots(out_dir, log, metrics, time_series):
     plt.savefig(plot_path, bbox_inches="tight")
     plt.close(fig)
 
-    print(f"\n[SAVED] Vehicle Log     -> {log_path}")
+    if save_log:
+        print(f"\n[SAVED] Vehicle Log     -> {log_path}")
     print(f"[SAVED] Metrics Summary -> {summary_path}")
     print(f"[SAVED] Metrics Plot    -> {plot_path}")
 
 
-def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
+def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None, save_log=False):
     cfg = config_path or os.environ.get("SUMO_CONFIG_PATH") or DEFAULT_CONFIG
     if not os.path.isabs(cfg):
         cfg = os.path.normpath(os.path.join(PROJECT_ROOT, cfg))
@@ -138,9 +140,16 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
         raise FileNotFoundError(f"SUMO config file not found: {cfg}")
 
     sumo_binary = "sumo-gui" if gui else "sumo"
-    traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
-                 "--no-warnings", "true"] + (["--start", "--quit-on-end"] if gui else []))
+    os.makedirs(out_dir, exist_ok=True)
+    collision_xml = os.path.join(out_dir, "collisions.xml")
 
+    traci.start([sumo_binary, "-c", cfg, "--step-length", str(DT),
+             "--collision.check-junctions", "true",
+             "--collision.action", "remove",
+             "--collision-output", collision_xml]
+            + (["--seed", str(seed)] if seed is not None else [])
+            + (["--start", "--quit-on-end"] if gui else []))
+    
     ramp_len = traci.lane.getLength("ramp_in_0")
     coordinator = InfrastructureCoordinator(ramp_len=ramp_len)
     controller = LongitudinalController(dt=DT)
@@ -167,7 +176,18 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
             traci.simulationStep()
             step += 1
             t = traci.simulation.getTime()
-            collisions += traci.simulation.getCollidingVehiclesNumber()
+            col_ids = set(traci.simulation.getCollidingVehiclesIDList())
+            collisions += len(col_ids)
+            for cid in col_ids:
+                print(f"[COLLISION] t={t:.1f}s vehicle={cid}")
+
+            alive = set(traci.vehicle.getIDList())
+            for vid in list(agents):
+                if vid not in alive:
+                    agents.pop(vid, None)
+                    coordinator.remove_vehicle(vid)
+                    controller.forget(vid)
+                    prev_failsafe_set.discard(vid)
 
             # ---- 1. Read vehicle state & report V2I Uplink (until sequenced) ----
             states = {}
@@ -175,7 +195,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
             for vid in traci.vehicle.getIDList():
                 if vid not in agents:
                     agents[vid] = VehicleAgent(vid)
-                    traci.vehicle.setSpeedMode(vid, 1)
+                    traci.vehicle.setSpeedMode(vid, 0)
                 ag = agents[vid]
                 st = ag.update_state()
                 states[vid] = st
@@ -224,29 +244,34 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
                         leader = {"speed": states[lid]["speed"], "gap": gap}
 
                 is_fs = controller.failsafe_active(ego, leader)
+                #this is the part that handles back to SUMO, for further analysis
+                B_FAILSAFE = 6.0   # [m/s^2]; define once near DT at the top of the file
+
                 if is_fs:
                     conflict_steps += 1
                     if vid not in prev_failsafe_set:
                         conflict_events += 1
                         prev_failsafe_set.add(vid)
-                    traci.vehicle.setSpeedMode(vid, 31)
-                    traci.vehicle.setSpeed(vid, -1)
-                    controller.prev_a[vid] = ego["accel"]
-                    a_cmd = float("nan")
+                    a_cmd = -B_FAILSAFE
+                    traci.vehicle.setSpeedMode(vid,0)
+                    traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
+                    controller.prev_a[vid] = a_cmd
+                    
                 else:
                     prev_failsafe_set.discard(vid)
                     a_cmd = controller.compute_acceleration(ego, pred, coordinator.v_m)
-                    traci.vehicle.setSpeedMode(vid, 1)
+                    traci.vehicle.setSpeedMode(vid, 0)
                     traci.vehicle.setSpeed(vid, max(0.0, ego["speed"] + a_cmd * DT))
 
-                log.append((
-                    round(t, 1), vid, ego["origin"], ego["lane"], round(ego["dist_to_merge"], 2),
-                    round(ego["speed"], 3), round(ego["accel"], 3), a_cmd,
-                    coordinator.get_sequence_id(vid), pred_id, int(is_fs),
-                    v2i_tx_step.get(vid, 0), i2v_tx_step.get(vid, 0), v2v_tx
-                ))
+                if save_log:
+                    log.append((
+                        round(t, 1), vid, ego["origin"], ego["lane"], round(ego["dist_to_merge"], 2),
+                        round(ego["speed"], 3), round(ego["accel"], 3), a_cmd,
+                        coordinator.get_sequence_id(vid), pred_id, int(is_fs),
+                        v2i_tx_step.get(vid, 0), i2v_tx_step.get(vid, 0), v2v_tx
+                    ))
 
-                if step % 20 == 0:
+                if step % 600 == 0:
                     d_pred = f"{pred['dist_to_merge']:.1f}" if pred else "-"
                     print(f"[{t:6.1f}s] {vid:<14}({ego['lane']:<8}) v={ego['speed']:5.1f} "
                           f"d2m={ego['dist_to_merge']:7.1f} pred={pred_id} (d={d_pred}) a={a_cmd:5.2f} "
@@ -289,9 +314,9 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None):
         print(f"Comm Cost: {total_kb:.2f} KB ({bitrate_kbps:.2f} kbps)")
 
         if out_dir:
-            save_outputs_and_plots(out_dir, log, metrics, time_series)
+            save_outputs_and_plots(out_dir, log, metrics, time_series, save_log=False)
 
-    return collisions
+        return collisions
 
 
 if __name__ == "__main__":
@@ -300,6 +325,8 @@ if __name__ == "__main__":
     default_time = float(env_time) if env_time else None
 
     ap = argparse.ArgumentParser(description="Run Perfect-Comm CAV cooperative merge simulation.")
+    ap.add_argument("--seed", type=int, default=None)
+    ap.add_argument("--no-log", action="store_true", help="skip sim_log.csv")
     ap.add_argument("--nogui", action="store_true", help="run headless (much faster)")
     ap.add_argument("--gui", action="store_true", help="force run with GUI")
     ap.add_argument("--time", type=float, default=default_time, help="stop after this many sim seconds")
@@ -308,4 +335,4 @@ if __name__ == "__main__":
     args = ap.parse_args()
 
     use_gui = True if args.gui else (False if args.nogui else env_gui)
-    run(gui=use_gui, sim_time=args.time, out_dir=args.out_dir, config_path=args.config)
+    run(gui=use_gui, sim_time=args.time, out_dir=args.out_dir, config_path=args.config, seed=args.seed, save_log=not args.no_log)

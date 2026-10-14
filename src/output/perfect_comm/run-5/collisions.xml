@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- generated on 2026-10-11T15:00:59.785299+05:30 by Eclipse SUMO sumo 1.27.1
+<sumoConfiguration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/sumoConfiguration.xsd">
+
+    <input>
+        <net-file value="C:\Users\Swagata\OneDrive\Desktop\documents\minor-sem5-project\config\../network/merge.net.xml"/>
+        <route-files value="C:\Users\Swagata\OneDrive\Desktop\documents\minor-sem5-project\config\../routes/merge.route.xml"/>
+    </input>
+
+    <output>
+        <collision-output value="C:\Users\Swagata\OneDrive\Desktop\documents\minor-sem5-project\src\output\perfect_comm\run-3\collisions.xml"/>
+    </output>
+
+    <time>
+        <begin value="0"/>
+        <end value="3600"/>
+        <step-length value="0.1"/>
+    </time>
+
+    <processing>
+        <collision.action value="remove"/>
+        <collision.check-junctions value="true"/>
+    </processing>
+
+    <traci_server>
+        <remote-port value="52461"/>
+    </traci_server>
+
+    <random_number>
+        <seed value="1"/>
+    </random_number>
+
+</sumoConfiguration>
+-->
+
+<collisions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/collision_file.xsd">
+    <collision time="496.30" type="collision" lane="ramp_in_0" pos="12.47" collider="flow_ramp.146" victim="flow_ramp.145" colliderType="cav_ramp" victimType="cav_ramp" colliderSpeed="24.65" victimSpeed="0.00" colliderFront="12.57,-0.35" colliderBack="7.60,-0.85" victimFront="19.55,0.35" victimBack="14.57,-0.15"/>
+    <collision time="1019.00" type="collision" lane="ramp_in_0" pos="192.87" collider="flow_ramp.291" victim="flow_ramp.290" colliderType="cav_ramp" victimType="cav_ramp" colliderSpeed="0.20" victimSpeed="0.01" colliderFront="192.07,17.60" colliderBack="187.10,17.10" victimFront="199.53,18.35" victimBack="194.56,17.85"/>
+    <collision time="1455.30" type="collision" lane="ramp_in_0" pos="39.52" collider="flow_ramp.408" victim="flow_ramp.407" colliderType="cav_ramp" victimType="cav_ramp" colliderSpeed="0.20" victimSpeed="0.00" colliderFront="39.48,2.34" colliderBack="34.50,1.84" victimFront="46.93,3.09" victimBack="41.95,2.59"/>
+    <collision time="1461.30" type="collision" lane="ramp_in_0" pos="202.55" collider="flow_ramp.404" victim="flow_ramp.403" colliderType="cav_ramp" victimType="cav_ramp" colliderSpeed="0.20" victimSpeed="0.01" colliderFront="201.71,18.56" colliderBack="196.73,18.07" victimFront="209.17,19.31" victimBack="204.19,18.81"/>
+    <collision time="1948.70" type="collision" lane="main_in_0" pos="10.75" collider="flow_main.571" victim="flow_main.570" colliderType="cav_main" victimType="cav_main" colliderSpeed="28.28" victimSpeed="0.00" colliderFront="10.75,38.40" colliderBack="5.75,38.40" victimFront="18.08,38.40" victimBack="13.08,38.40"/>
+    <collision time="2859.90" type="collision" lane="main_in_0" pos="140.15" collider="flow_main.843" victim="flow_main.842" colliderType="cav_main" victimType="cav_main" colliderSpeed="0.20" victimSpeed="0.01" colliderFront="140.15,38.40" colliderBack="135.15,38.40" victimFront="147.64,38.40" victimBack="142.64,38.40"/>
+    <collision time="2957.10" type="collision" lane="main_in_0" pos="175.36" collider="flow_main.861" victim="flow_main.860" colliderType="cav_main" victimType="cav_main" colliderSpeed="0.20" victimSpeed="0.01" colliderFront="175.36,38.40" colliderBack="170.36,38.40" victimFront="182.84,38.40" victimBack="177.84,38.40"/>
+</collisions>
