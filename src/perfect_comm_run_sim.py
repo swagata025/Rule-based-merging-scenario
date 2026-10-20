@@ -195,7 +195,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None
             for vid in traci.vehicle.getIDList():
                 if vid not in agents:
                     agents[vid] = VehicleAgent(vid)
-                    traci.vehicle.setSpeedMode(vid, 0)
+                    traci.vehicle.setSpeedMode(vid, 0) #turning off all SUMO safety checks
                 ag = agents[vid]
                 st = ag.update_state()
                 states[vid] = st
@@ -203,6 +203,7 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, config_path=None, seed=None
                 if st["lane"] in ("main", "ramp"):
                     # In baseline, unsequenced cars send V2I uplink every step
                     is_unsequenced = coordinator.get_sequence_id(vid) is None
+                    #this is the message being passed to the infrastructure 
                     coordinator.receive_vehicle_data(vid, st["lane"], st["speed"], st["dist_to_merge"],
                                                      t, first_contact=not ag.entered_v2i)
                     ag.entered_v2i = True
