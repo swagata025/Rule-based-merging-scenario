@@ -80,7 +80,7 @@ def save_outputs_and_plots(out_dir, tag, log, metrics, time_series, save_logs=Fa
         for k, (val, unit) in metrics.items():
             w.writerow([k, val, unit])
 
-    # 3. Generate 3-Panel Publication-Ready Dashboard Plot (Identical style to perfect_comm & real_comm)
+    # 3. Generate 3-Panel Publication-Ready Dashboard Plot
     fig, axes = plt.subplots(1, 3, figsize=(16, 5), dpi=150)
     title_params = (f"v_th={metrics['Param_V_Th_mps'][0]} m/s, "
                     f"d_th={metrics['Param_D_Th_m'][0]} m, "
@@ -106,7 +106,7 @@ def save_outputs_and_plots(out_dir, tag, log, metrics, time_series, save_logs=Fa
                      xytext=(0, 3), textcoords="offset points", ha="center", fontweight="bold")
     ax1.set_ylim(0, max(max(c_vals) * 1.2, 5))
 
-    # Panel 2: Number of Messages (Event-Sent vs. Saved by Event Trigger)
+    # Panel 2: Number of Messages (Event-Sent)
     ax2 = axes[1]
     links = ["V2I Uplink", "I2V Downlink", "V2V CACC", "Total"]
     sent_vals = [
@@ -115,41 +115,28 @@ def save_outputs_and_plots(out_dir, tag, log, metrics, time_series, save_logs=Fa
         metrics["Messages_V2V_Sent"][0],
         metrics["Messages_Total_Sent"][0]
     ]
-    base_v2v = metrics["Messages_V2V_Baseline_10Hz"][0]
-    base_total = metrics["Messages_V2I_Sent"][0] + metrics["Messages_I2V_Sent"][0] + base_v2v
-    base_vals = [
-        metrics["Messages_V2I_Sent"][0],
-        metrics["Messages_I2V_Sent"][0],
-        base_v2v,
-        base_total
-    ]
     x = np.arange(len(links))
-    width = 0.36
-    b_base = ax2.bar(x - width / 2, base_vals, width, label="10 Hz Baseline", color="#aec7e8", edgecolor="black")
-    b_sent = ax2.bar(x + width / 2, sent_vals, width, label="Event-Triggered Sent", color="#1f77b4", edgecolor="black")
+    width = 0.55
+    b_sent = ax2.bar(x, sent_vals, width, label="Event-Triggered Sent", color="#1f77b4", edgecolor="black")
     ax2.set_xticks(x)
     ax2.set_xticklabels(links)
     ax2.set_title("2. Number of Wireless Messages", fontweight="bold")
     ax2.set_ylabel("Packet Count")
     ax2.grid(axis="y", linestyle="--", alpha=0.5)
     ax2.legend(loc="upper left")
-    for b in list(b_base) + list(b_sent):
+    for b in b_sent:
         h = b.get_height()
         ax2.annotate(f"{int(h):,}", xy=(b.get_x() + b.get_width() / 2, h),
                      xytext=(0, 3), textcoords="offset points", ha="center", fontsize=8, fontweight="bold")
-    ax2.set_ylim(0, max(max(base_vals) * 1.2, 10))
+    ax2.set_ylim(0, max(max(sent_vals) * 1.2, 10))
 
     # Panel 3: Cumulative Communication Cost Over Time (KB)
     ax3 = axes[2]
     t_arr = time_series["t"]
     cost_event_kb = time_series["cum_cost_kb"]
-    cost_base_kb = time_series["cum_baseline_cost_kb"]
-    ax3.plot(t_arr, cost_base_kb, color="#7f7f7f", linestyle="--", linewidth=2.0,
-             label=f"10 Hz Baseline Cost: {metrics['Comm_Cost_Baseline_10Hz_KB'][0]:.2f} KB")
+    
     ax3.plot(t_arr, cost_event_kb, color="#2ca02c", linewidth=2.2,
              label=f"Event-Triggered Cost: {metrics['Comm_Cost_Total_KB'][0]:.2f} KB ({metrics['Comm_Cost_Bitrate_kbps'][0]:.2f} kbps)")
-    ax3.fill_between(t_arr, cost_event_kb, cost_base_kb, color="#2ca02c", alpha=0.15,
-                     label=f"Saved Bandwidth ({metrics['V2V_Reduction_Pct'][0]:.1f}% V2V reduction)")
     ax3.set_title("3. Cumulative Communication Cost", fontweight="bold")
     ax3.set_xlabel("Simulation Time [s]")
     ax3.set_ylabel("Cumulative Data Transmitted [KB]")
@@ -201,10 +188,9 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
     v2i_sent = 0
     i2v_sent = 0
     v2v_sent = 0
-    v2v_baseline_possible = 0
 
     log = []
-    time_series = {"t": [], "cum_cost_kb": [], "cum_baseline_cost_kb": [], "cum_msgs": []}
+    time_series = {"t": [], "cum_cost_kb": [], "cum_msgs": []}
     sort_steps = int(round(SORT_PERIOD / DT))
 
     step = 0
@@ -284,8 +270,6 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                 v2v_tx_used = 0
                 if pred_id and pred_id in agents:
                     pred = agents[pred_id].get_broadcasted_state(t, use_dead_reckoning=dead_reckoning)
-                    # Count V2V message only when an active follower-predecessor link exists
-                    v2v_baseline_possible += 1
                     v2v_tx_used = v2v_tx_flags.get(pred_id, 0)
                     v2v_sent += v2v_tx_used
 
@@ -329,10 +313,8 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
                           f"v_m={coordinator.v_m:.1f} tx={v2v_tx_flags.get(vid, 0)}")
 
             total_bytes = (v2i_sent * PKT_BYTES_V2I) + (i2v_sent * PKT_BYTES_I2V) + (v2v_sent * PKT_BYTES_V2V)
-            base_bytes = (v2i_sent * PKT_BYTES_V2I) + (i2v_sent * PKT_BYTES_I2V) + (v2v_baseline_possible * PKT_BYTES_V2V)
             time_series["t"].append(round(t, 1))
             time_series["cum_cost_kb"].append(total_bytes / 1024.0)
-            time_series["cum_baseline_cost_kb"].append(base_bytes / 1024.0)
             time_series["cum_msgs"].append(v2i_sent + i2v_sent + v2v_sent)
 
     except KeyboardInterrupt:
@@ -345,11 +327,8 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
 
         total_msgs = v2i_sent + i2v_sent + v2v_sent
         total_bytes = (v2i_sent * PKT_BYTES_V2I) + (i2v_sent * PKT_BYTES_I2V) + (v2v_sent * PKT_BYTES_V2V)
-        base_bytes = (v2i_sent * PKT_BYTES_V2I) + (i2v_sent * PKT_BYTES_I2V) + (v2v_baseline_possible * PKT_BYTES_V2V)
         total_kb = total_bytes / 1024.0
-        base_kb = base_bytes / 1024.0
         bitrate_kbps = (total_bytes * 8.0 / 1000.0) / max(t, DT)
-        v2v_saved_pct = 100.0 * (1.0 - v2v_sent / max(v2v_baseline_possible, 1))
 
         metrics = {
             "Param_V_Th_mps": (v_th, "m/s"),
@@ -362,19 +341,15 @@ def run(gui=True, sim_time=None, out_dir=OUTPUT_DIR, tag="", config_path=None,
             "Messages_V2I_Sent": (v2i_sent, "packets"),
             "Messages_I2V_Sent": (i2v_sent, "packets"),
             "Messages_V2V_Sent": (v2v_sent, "packets"),
-            "Messages_V2V_Baseline_10Hz": (v2v_baseline_possible, "packets"),
-            "V2V_Reduction_Pct": (round(v2v_saved_pct, 2), "%"),
             "Messages_Total_Sent": (total_msgs, "packets"),
             "Comm_Cost_Total_Bytes": (total_bytes, "B"),
             "Comm_Cost_Total_KB": (round(total_kb, 3), "KB"),
-            "Comm_Cost_Baseline_10Hz_KB": (round(base_kb, 3), "KB"),
             "Comm_Cost_Bitrate_kbps": (round(bitrate_kbps, 3), "kbps"),
         }
 
         print(f"\nDone (Event-Based Comm). t={t:.1f}s | Collisions={collisions} | TTC Conflicts={conflict_events}")
-        print(f"Messages: Total={total_msgs} (V2I={v2i_sent}, I2V={i2v_sent}, V2V={v2v_sent} vs 10Hz_V2V={v2v_baseline_possible})")
-        print(f"V2V Channel Load Reduction: {v2v_saved_pct:.1f}%")
-        print(f"Comm Cost: {total_kb:.2f} KB vs {base_kb:.2f} KB baseline ({bitrate_kbps:.2f} kbps)")
+        print(f"Messages: Total={total_msgs} (V2I={v2i_sent}, I2V={i2v_sent}, V2V={v2v_sent})")
+        print(f"Comm Cost: {total_kb:.2f} KB ({bitrate_kbps:.2f} kbps)")
 
         if out_dir:
             save_outputs_and_plots(out_dir, tag, log, metrics, time_series,save_logs)
