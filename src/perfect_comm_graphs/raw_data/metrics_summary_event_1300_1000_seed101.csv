@@ -1,0 +1,15 @@
+Metric,Value,Unit
+Param_V_Th_mps,0.3,m/s
+Param_D_Th_m,0.5,m
+Param_Max_Silence_s,1.0,s
+Duration_s,3600.0,s
+Collisions,306,count
+TTC_Conflict_Events,614,count
+TTC_Conflict_Steps,12068,steps
+Messages_V2I_Sent,25293,packets
+Messages_I2V_Sent,30631,packets
+Messages_V2V_Sent,174103,packets
+Messages_Total_Sent,230027,packets
+Comm_Cost_Total_Bytes,14231632,B
+Comm_Cost_Total_KB,13898.078,KB
+Comm_Cost_Bitrate_kbps,31.626,kbps

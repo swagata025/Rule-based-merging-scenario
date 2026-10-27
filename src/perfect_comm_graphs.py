@@ -24,7 +24,7 @@ SIM_TIME = "3600"
 SEEDS = [42, 101, 202, 303, 404]
 
 highway_vph = np.linspace(900, 1800, 10, dtype=int)
-ramp_vph = np.linspace(600, 1200, 10, dtype=int)
+ramp_vph = np.linspace(600, 1500, 10, dtype=int)
 vph_pairs = list(zip(highway_vph, ramp_vph))
 
 def update_route_file(route_path, hw_vph, r_vph):

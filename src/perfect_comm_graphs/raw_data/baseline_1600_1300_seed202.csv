@@ -1,0 +1,12 @@
+Metric,Value,Unit
+Duration_s,3600.0,s
+Collisions,735,count
+TTC_Conflict_Events,1361,count
+TTC_Conflict_Steps,24668,steps
+Messages_V2I_Sent,29880,packets
+Messages_I2V_Sent,36685,packets
+Messages_V2V_Sent,670202,packets
+Messages_Total_Sent,736767,packets
+Comm_Cost_Total_Bytes,46566128,B
+Comm_Cost_Total_KB,45474.734,KB
+Comm_Cost_Bitrate_kbps,103.48,kbps
